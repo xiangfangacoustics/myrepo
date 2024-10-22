@@ -1,0 +1,70 @@
+---
+title: "Homework_5"
+format: html
+editor: visual
+---
+
+## Library package
+
+```{r}
+library(countrycode)
+library(tidyverse)
+library(here)
+library(sf)
+library(janitor)
+library(plotly)
+library(tmap)
+library(tmaptools)
+```
+
+## Read csv
+
+```{r}
+my_csv<- read_csv("/Users/xfang/Desktop/UCL PHD/PGTA/CASA GIS/Week4/w4_hw_try-master/Gender Inequality Index (GII).csv",
+                       locale = locale(encoding = "latin1"),
+                       na = "..", skip=5)
+
+myshp <- st_read("/Users/xfang/Desktop/UCL PHD/PGTA/CASA GIS/Week4/w4_hw_try-master/World_Countries_(Generalized)/World_Countries__Generalized_.shp")
+```
+
+## Filter cities
+
+```{r}
+spanish_cities <- world_cities %>%
+  janitor::clean_names()%>%
+  dplyr::filter(cntry_name=="Spain")
+```
+
+## Crop and master raster
+
+```{r}
+diffcsv <- my_csv%>%
+  clean_names()%>%
+  select(country, x2019, x2010)
+diffcsv2 <- diffcsv%>%
+  mutate(diff=x2019-x2010)%>%
+  mutate(cc=countrycode(country, 
+                              origin = 'country.name', 
+                              destination = 'iso2c'))
+```
+
+## Join the global gender inequality index to [spatial data of the World](https://hub.arcgis.com/datasets/2b93b06dc0dc4e809d3c8db5cb96ba69_0/explore?location=-2.688200%2C0.000000%2C1.41)
+
+```{r}
+joinshp <- myshp%>%
+  clean_names()%>%
+  left_join(.,diffcsv2,
+            by=c("aff_iso"="cc"))
+```
+
+```{r}
+tmap_mode("plot")
+qtm(joinshp,
+    fill="diff")
+```
+
+## Circulate data
+
+```{r}
+write_csv(diffcsv2,"/Users/xfang/Documents/CASA/myrepo/Gender Inequality Index_differences_2010_2019.csv")
+```
