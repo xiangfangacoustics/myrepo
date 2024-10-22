@@ -15,6 +15,7 @@ library(janitor)
 library(plotly)
 library(tmap)
 library(tmaptools)
+library(ggplot2)
 ```
 
 ## Read csv
