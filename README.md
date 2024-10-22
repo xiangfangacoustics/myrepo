@@ -1,2 +1,2 @@
 # myrepo
-Repository for CASA0005 Geographic System and Data Science
+Repository for CASA0005 Geographic Information System and Data Science
