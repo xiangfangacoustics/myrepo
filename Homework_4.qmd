@@ -62,3 +62,9 @@ tmap_mode("plot")
 qtm(joinshp,
     fill="diff")
 ```
+
+## Circulate data
+
+```{r}
+write_csv(diffcsv2,"/Users/xfang/Documents/CASA/myrepo/Gender Inequality Index_differences_2010_2019.csv")
+```
