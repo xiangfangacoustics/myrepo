@@ -30,12 +30,6 @@ myshp <- st_read("/Users/xfang/Desktop/UCL PHD/PGTA/CASA GIS/Week4/w4_hw_try-mas
 
 ## Filter cities
 
-```{r}
-spanish_cities <- world_cities %>%
-  janitor::clean_names()%>%
-  dplyr::filter(cntry_name=="Spain")
-```
-
 ## Crop and master raster
 
 ```{r}
