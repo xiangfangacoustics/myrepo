@@ -132,7 +132,7 @@ legend <- tm_shape(joinshp) +
 t=tmap_arrange(tm1, tm2, tm3, legend, ncol=2)
 ```
 
-## Export Mapping
+## Export New Mapping
 
 ```{r}
 t
