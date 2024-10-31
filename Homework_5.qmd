@@ -118,8 +118,13 @@ legend <- tm_shape(joinshp) +
   tm_polygons("x2019", 
               breaks=breaks,
               palette="PuBu")+
+  tm_shape(joinshp) + 
+   tm_polygons("x2010", 
+               breaks = breaks, 
+               palette = "PuBu")+
   tm_legend(show=TRUE)+
   tm_layout(legend.only = TRUE, legend.position=c(0.1,0.1),asp=0.1)
+
 
 # in tmap can't make legends side by side unless use this workaround: 
 #https://github.com/r-tmap/tmap/issues/476 
