@@ -153,7 +153,6 @@ legend <- tm_shape(Hotels) +
     tm_credits("(c) OpenStreetMap contrbutors and Air b n b", position=c(0.0,0.0))
   
 t=tmap_arrange(tm1, tm2, tm3, legend, ncol=2)
-t
 ```
 
 ## Or Using grid package

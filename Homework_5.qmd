@@ -1,0 +1,134 @@
+---
+title: "Homework_5"
+format: html
+editor: visual
+---
+
+## Library package
+
+```{r}
+library(countrycode)
+library(tidyverse)
+library(here)
+library(sf)
+library(janitor)
+library(plotly)
+library(tmap)
+library(tmaptools)
+library(ggplot2)
+```
+
+## Read csv
+
+```{r}
+my_csv<- read_csv("/Users/xfang/Desktop/UCL PHD/PGTA/CASA GIS/Week4/w4_hw_try-master/Gender Inequality Index (GII).csv",
+                       locale = locale(encoding = "latin1"),
+                       na = "..", skip=5)
+
+myshp <- st_read("/Users/xfang/Desktop/UCL PHD/PGTA/CASA GIS/Week4/w4_hw_try-master/World_Countries_(Generalized)/World_Countries__Generalized_.shp")
+```
+
+## Filter cities
+
+## Crop and master raster
+
+```{r}
+diffcsv <- my_csv%>%
+  clean_names()%>%
+  select(country, x2019, x2010)
+diffcsv2 <- diffcsv%>%
+  mutate(diff=x2019-x2010)%>%
+  mutate(cc=countrycode(country, 
+                              origin = 'country.name', 
+                              destination = 'iso2c'))
+```
+
+## Join the global gender inequality index to [spatial data of the World](https://hub.arcgis.com/datasets/2b93b06dc0dc4e809d3c8db5cb96ba69_0/explore?location=-2.688200%2C0.000000%2C1.41)
+
+```{r}
+joinshp <- myshp%>%
+  clean_names()%>%
+  left_join(.,diffcsv2,
+            by=c("aff_iso"="cc"))
+joinshp2 <- joinshp %>%
+  mutate(summary = case_when(diff>0 ~ "improved",
+                             diff==0 ~ "the same",
+                            TRUE ~ "worse"))
+```
+
+```{r}
+tmap_mode("plot")
+qtm(joinshp,
+    fill="diff")
+```
+
+## Circulate data
+
+```{r}
+write_csv(diffcsv2,"/Users/xfang/Documents/CASA/myrepo/Gender Inequality Index_differences_2010_2019.csv")
+```
+
+## Mapping
+
+```{r}
+breaks=c(0.0,0.2,0.4,0.6,0.8,1.0)
+diffbreaks=c(-0.4,-0.3,-0.2,-0.1,0,0.1)
+
+# preserve size not direction like WGS84
+joinshp = st_transform(joinshp, crs = "+proj=moll")
+
+# plot each map
+tm1 <- tm_shape(joinshp) + 
+  tm_polygons("x2019", 
+              breaks=breaks,
+              palette="PuBu")+
+  tm_legend(show=FALSE)+
+  tm_layout(frame=FALSE)+
+  tm_credits("(a)", position=c(0,0.85), size=1.5)
+
+tm2 <- tm_shape(joinshp) + 
+  tm_polygons("x2010",
+              breaks=breaks,
+              palette="PuBu") + 
+  tm_legend(show=FALSE)+
+  tm_layout(frame=FALSE)+
+  tm_credits("(b)", position=c(0,0.85), size=1.5)
+
+tm3 <- tm_shape(joinshp) + 
+  tm_polygons("diff",
+              #style="fixed",
+              breaks=diffbreaks,
+              palette=("Blues"),
+               midpoint = NA) + 
+  tm_legend(show=FALSE)+
+  tm_layout(frame=FALSE)+
+  tm_credits("(c)", position=c(0,0.85), size=1.5)
+
+
+legend <- tm_shape(joinshp) +
+    tm_polygons("diff",
+                 palette=("Blues"),
+               midpoint = NA) +
+    #tm_scale_bar(position=c(0.2,0.04), text.size=0.6)+
+    tm_compass(north=0, position=c(0.6,0.6))+
+    tm_layout(legend.only = TRUE, legend.position=c(0.3,0.25),asp=0.1)+
+    tm_credits("Mapped data:\nUN Gender Inequality Index\nWorld outline:\nArcGIS Hub 
+               ", position=c(0.3,0.2), just="left")+
+  tm_shape(joinshp) + 
+  tm_polygons("x2019", 
+              breaks=breaks,
+              palette="PuBu")+
+  tm_legend(show=TRUE)+
+  tm_layout(legend.only = TRUE, legend.position=c(0.1,0.1),asp=0.1)
+
+# in tmap can't make legends side by side unless use this workaround: 
+#https://github.com/r-tmap/tmap/issues/476 
+
+t=tmap_arrange(tm1, tm2, tm3, legend, ncol=2)
+```
+
+## Export Mapping
+
+```{r}
+t
+```
