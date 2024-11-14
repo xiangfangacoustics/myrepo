@@ -1,0 +1,183 @@
+---
+title: "Practical exam_week_6"
+format: html
+editor: visual
+---
+
+## "Are the evicitions in 2020 for New York spatially random or do they exhibit clustering"
+
+```{r}
+library(tidyverse)
+library(sf)
+library(tmap)
+library(janitor)
+library(spatstat)
+```
+
+```{r}
+evictions_points <- read_csv("/Users/xfang/Desktop/UCL PHD/PGTA/CASA GIS/Week6/Evictions_20241114.csv", na=c(" "))
+
+community_areas <- st_read("/Users/xfang/Desktop/UCL PHD/PGTA/CASA GIS/Week6/Community Districts/geo_export_3be7227b-50aa-4071-b738-267d51635132.shp")
+```
+
+### Check all variable types
+
+```{r}
+Datatypelist <- evictions_points %>% 
+  summarise_all(class) %>%
+  pivot_longer(everything(), 
+               names_to="All_variables", 
+               values_to="Variable_class")
+
+Datatypelist
+```
+
+### Convert points into sf objects
+
+```{r}
+points <- evictions_points%>%
+  #also possible to use something like drop_na(Longitdue, Latitude) 
+  filter(Longitude<0 & Latitude>0)%>%
+
+  st_as_sf(., coords = c("Longitude", "Latitude"), 
+                   crs = 4326)
+```
+
+### Plot
+
+```{r}
+tmap_mode("plot")
+tm_shape(community_areas) +
+  tm_polygons(col = NA, alpha = 0.5) +
+tm_shape(points) +
+  tm_dots(col = "blue")
+```
+
+## Subset the points within the community areas
+
+```{r}
+community_areas <- community_areas%>%
+  st_transform(., 4326)
+
+points_sub <- points[community_areas,]
+```
+
+## Select the eviction date from 2020 and residential areas
+
+```{r}
+points_sub_2020<-points_sub%>%
+  clean_names()%>%
+  filter(str_detect(executed_date, "2020"))%>%
+ # filter(eviction_legal_possession=="Eviction")%>%
+  filter(residential_commercial=="Residential")
+```
+
+## Make a new map (residential, 2020)
+
+```{r}
+tmap_mode("plot")
+tm_shape(community_areas) +
+  tm_polygons(col = NA, alpha = 0.5) +
+tm_shape(points_sub_2020) +
+  tm_dots(col = "blue")
+```
+
+## Prepare for plotting (CRS=6538, sp, ppp)
+
+```{r}
+community_areas_projected <- community_areas %>%
+  st_transform(., 6538)
+
+points_sub_2020_projected <- points_sub_2020 %>%
+  st_transform(., 6538)
+
+
+window <- as.owin(community_areas_projected)
+plot(window)
+
+#create a sp object
+points_sub_2020_projected_sp<- points_sub_2020_projected %>%
+  as(., 'Spatial')
+#create a ppp object
+points_sub_2020_projected_sp.ppp <- ppp(x=points_sub_2020_projected_sp@coords[,1],
+                          y=points_sub_2020_projected_sp@coords[,2],
+                          window=window)
+```
+
+## Ripley k
+
+```{r}
+Airbnb <- Joinfun(Airbnb, Londonborough)
+```
+
+```{r}
+K <- points_sub_2020_projected_sp.ppp %>%
+  Kest(., correction="border") %>%
+  plot()
+```
+
+## Indicating clustering patterns
+
+```{r}
+library(sp)
+
+#first extract the points from the spatial points data frame
+points_todf <- points_sub_2020_projected_sp %>%
+  coordinates(.)%>%
+  as.data.frame()
+
+#now run the dbscan analysis
+points_todf_DBSCAN <- points_todf %>%
+  fpc::dbscan(.,eps = 2000, MinPts = 50)
+
+points_todf%>%
+  dbscan::kNNdistplot(.,k=50)
+
+#now quickly plot the results
+plot(points_todf_DBSCAN, points_todf, main = "DBSCAN Output", frame = F)
+plot(community_areas_projected$geometry, add=T)
+```
+
+### Add cluster info to the original frame
+
+```{r}
+points_todf<- points_todf %>%
+  mutate(dbcluster=points_todf_DBSCAN$cluster)
+```
+
+### Convert into the sf object
+
+```{r}
+tosf <- points_todf%>%
+  st_as_sf(., coords = c("coords.x1", "coords.x2"), 
+                   crs = 6538)%>%
+  filter(dbcluster>0)
+```
+
+### Mapping using ggplot2
+
+```{r}
+ggplot(data = community_areas_projected) +
+  # add the geometry of the community areas
+  geom_sf() +
+  # add the geometry of the points - i have had to set the data here to add the layer
+  geom_sf(data = tosf, size = 0.4, colour=tosf$dbcluster, fill=tosf$dbcluster)
+```
+
+### Mapping using tmap
+
+```{r}
+library(tmap)
+library(sf)
+
+#tmaptools::palette_explorer()
+library(RColorBrewer)
+library(tmaptools)
+colours<- get_brewer_pal("Set1", n = 19)
+
+tmap_mode("plot")
+tm_shape(community_areas) +
+  tm_polygons(col = NA, alpha = 0.5) +
+tm_shape(tosf) +
+  tm_dots(col = "dbcluster",  palette = colours, style = "cat")
+```
