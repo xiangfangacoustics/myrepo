@@ -339,3 +339,84 @@ autoplot.OpenStreetMap(basemap_bng)+
                    fill=dbcluster), 
                alpha = 0.5) 
 ```
+
+### London borough
+
+```{r}
+Londonborough <- st_read("/Users/xfang/Desktop/UCL PHD/PGTA/CASA GIS/Week1/statistical-gis-boundaries-london/ESRI/London_Borough_Excluding_MHW.shp")%>%
+  st_transform(., 27700)
+```
+
+```{r}
+OSM <- st_read("/Users/xfang/Desktop/UCL PHD/PGTA/CASA GIS/Week5/greater-london-latest-free.shp/gis_osm_pois_a_free_1.shp") %>%
+  st_transform(., 27700) %>%
+  #select hotels only
+  filter(fclass == 'hotel')
+```
+
+```{r}
+join_example <-  st_join(OSM, Londonborough)
+
+nrow(join_example)
+```
+
+```{r}
+OSM <- st_read("/Users/xfang/Desktop/UCL PHD/PGTA/CASA GIS/Week5/greater-london-latest-free.shp/gis_osm_pois_a_free_1.shp") %>%
+  st_transform(., 27700) %>%
+  #select hotels only
+  filter(fclass == 'hotel')
+```
+
+```{r}
+Londonborough <- st_read("/Users/xfang/Desktop/UCL PHD/PGTA/CASA GIS/Week1/statistical-gis-boundaries-london/ESRI/London_Borough_Excluding_MHW.shp")%>%
+  st_transform(., 27700)
+```
+
+```{r}
+Airbnb <- read_csv("/Users/xfang/Desktop/UCL PHD/PGTA/CASA GIS/Week5/listings.csv") %>%
+  st_as_sf(., coords = c("longitude", "latitude"), 
+                   crs = 4326) %>%
+    st_transform(., 27700)%>%
+    #select entire places that are available all year
+    filter(room_type == 'Entire home/apt' & availability_365 =='365')
+```
+
+```{r}
+Joinfun <- function(data1, data2){
+
+output<- data1%>%
+  st_join(Londonborough,.) %>%
+  add_count(GSS_CODE, name="hotels_in_borough") 
+
+  return(output)
+}
+```
+
+```{r}
+# use the function for hotels
+Hotels <- Joinfun(OSM, Londonborough)
+
+# then for airbnb
+Airbnb <- Joinfun(Airbnb, Londonborough)
+ 
+Hotels <- Hotels %>%
+  #at the moment each hotel is a row for the borough
+  #we just one one row that has number of airbnbs
+  group_by(., GSS_CODE, NAME)%>%
+  summarise(`Accomodation count` = unique(hotels_in_borough))
+
+Airbnb <- Airbnb %>%
+  group_by(., GSS_CODE, NAME)%>%
+  summarise(`Accomodation count` = unique(hotels_in_borough))
+```
+
+```{r}
+all_accomodation <- st_join(Hotels, Airbnb)
+head(all_accomodation)
+```
+
+```{r}
+all_accomodation <- st_join(Hotels, Airbnb, join = st_equals)
+
+head(all_accomodation)
+```
