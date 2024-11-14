@@ -361,18 +361,6 @@ nrow(join_example)
 ```
 
 ```{r}
-OSM <- st_read("/Users/xfang/Desktop/UCL PHD/PGTA/CASA GIS/Week5/greater-london-latest-free.shp/gis_osm_pois_a_free_1.shp") %>%
-  st_transform(., 27700) %>%
-  #select hotels only
-  filter(fclass == 'hotel')
-```
-
-```{r}
-Londonborough <- st_read("/Users/xfang/Desktop/UCL PHD/PGTA/CASA GIS/Week1/statistical-gis-boundaries-london/ESRI/London_Borough_Excluding_MHW.shp")%>%
-  st_transform(., 27700)
-```
-
-```{r}
 Airbnb <- read_csv("/Users/xfang/Desktop/UCL PHD/PGTA/CASA GIS/Week5/listings.csv") %>%
   st_as_sf(., coords = c("longitude", "latitude"), 
                    crs = 4326) %>%
