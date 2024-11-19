@@ -110,9 +110,11 @@ plot(window)
 
 ## Creating a spatial object
 
+BluePlaquesSub
+
 ```{r}
 #create a sp object
-BluePlaquesSub<- BluePlaquesSub %>%
+<- BluePlaquesSub %>%
   as(., 'Spatial')
 #removing the duplicate
 BluePlaquesSub <- BluePlaquesSub[!duplicated(BluePlaquesSub@coords), ]
