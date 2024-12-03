@@ -169,7 +169,7 @@ Lward.lw <- LWard_nb %>%
   nb2listw(., style="C")
 ```
 
-### Moran\'s I
+### Moran's I
 
 ```{r}
 I_LWard_Global_Density <- points_sf_joined %>%
@@ -180,7 +180,7 @@ I_LWard_Global_Density <- points_sf_joined %>%
 I_LWard_Global_Density
 ```
 
-### Geary\'s C
+### Geary's C
 
 ```{r}
 C_LWard_Global_Density <- 
